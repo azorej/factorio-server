@@ -40,6 +40,7 @@ RUN locale-gen en_US.UTF-8
 RUN echo "PS1='\e[92m\u\e[0m@\e[94m\h\e[0m:\e[35m\w\e[0m# '" >> /root/.bashrc
 
 # Setup non-root user
+ARG USER
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
