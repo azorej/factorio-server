@@ -1,0 +1,52 @@
+[project]
+name = "main"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "dagger-io",
+]
+
+[tool.uv.sources]
+dagger-io = { path = "sdk", editable = true }
+
+[tool.uv]
+dev-dependencies = [
+  "ipython >= 8.0.0",
+]
+
+[build-system]
+requires = ["hatchling==1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+select = [
+    "F",     # pyflakes
+    "E",     # pycodestyle (errors)
+    "W",     # pycodestyle (warnings) e.g. trailing/leading whitespaces
+    "Q",     # quotes
+    "I001",  # unsorted imports (isort)
+    "TID",   # tidy-imports
+    # "COM812" # trailing comma  # needed for refactoring
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+python_files = "tests/*.py"
+

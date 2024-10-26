@@ -1,0 +1,6 @@
+{
+  "name": "factorio-server",
+  "sdk": "python",
+  "source": "dagger",
+  "engineVersion": "v0.13.6"
+}

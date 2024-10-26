@@ -1,0 +1,46 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
+{
+	"name": "default",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"build": {
+		"dockerfile": "./Dockerfile",
+		"args": { 
+			"USER": "${localEnv:USER:codespaces}"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"TomRijndorp.find-it-faster",
+				"aaron-bond.better-comments",
+				"charliermarsh.ruff",
+				"eamodio.gitlens",
+				"ms-azuretools.vscode-docker",
+				"ms-python.mypy-type-checker",
+				"ms-python.python",
+				"spmeesseman.vscode-taskexplorer"
+			]
+		}
+	},
+	"mounts": [
+		// User cache volume mount
+		"source=${localWorkspaceFolderBasename}-cache,target=/home/${localEnv:USER:codespaces}/.cache,type=volume"
+	],
+	"workspaceMount": "source=${localWorkspaceFolder}/,target=${containerWorkspaceFolder},type=bind,consistency=cached",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+	"postCreateCommand": "scripts/post_setup_container.sh \"${localEnv:USER:codespaces}\" \"${containerWorkspaceFolder}\"",
+	"postAttachCommand": "scripts/post_attach_container.sh && scripts/create_dagger_venv.sh",
+	
+	// https://containers.dev/features
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+
+	// More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "${localEnv:USER:codespaces}"
+}
