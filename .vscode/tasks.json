@@ -9,6 +9,13 @@
             "command": [
                 "${workspaceFolder}/scripts/update_dagger_venv.sh"
             ],
+        },
+        {
+            "label": "Login to Dagger Cloud",
+            "type": "shell",
+            "command": [
+                "dagger login"
+            ],
         }
     ]
 }
