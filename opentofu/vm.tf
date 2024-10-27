@@ -13,11 +13,19 @@ resource "yandex_compute_instance" "server" {
     "docker-container-declaration" = <<-EOT
             spec:
                 containers:
-                - image: factoriotools/factorio:stable-2.0.11
+                - image: factoriotools/factorio:${var.factorio_image_tag}
                   securityContext:
                     privileged: false
                   stdin: false
                   tty: false
+                  volumeMounts:
+                    - mountPath: /factorio
+                      name: factorio-data
+                restartPolicy: Always
+                volumes:
+                  - name: factorio-data
+                    hostPath:
+                      path: /factorio-data
         EOT
     "serial-port-enable"           = var.enable_serial_port ? "1" : "0"
     "ssh-keys"                     = "${var.username}:${local.ssh_public_key}"
@@ -41,6 +49,13 @@ resource "yandex_compute_instance" "server" {
     initialize_params {
       image_id = data.yandex_compute_image.container-optimized-image.id
     }
+  }
+
+  secondary_disk {
+    disk_id = yandex_compute_disk.factorio_data.id
+    auto_delete = false
+    device_name = "factorio-data"
+    mode = "READ_WRITE"
   }
 
   network_interface {

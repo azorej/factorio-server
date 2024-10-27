@@ -356,9 +356,9 @@ class FactorioServer:
         ).directory('${HOME}/.ssh', expand=True)
 
     @function
-    async def open_ssh(self, open_tofu_dir: dagger.Directory):
+    async def resolve_public_ip(self) -> str:
         folder = YcFolderInfo.model_validate_json(await self.init_yc_folder())
-        ip = json.loads(
+        return json.loads(
             await (await self.logged_yandex_cloud_cli())
             .with_env_variable('CACHEBUSTER', str(datetime.now()))
             .with_exec(
@@ -374,8 +374,12 @@ class FactorioServer:
             )
             .stdout()
         )['network_interfaces'][0]['primary_v4_address']['one_to_one_nat']['address']
+
+    @function
+    async def ssh_container(self, open_tofu_dir: dagger.Directory) -> dagger.Container:
+        ip = await self.resolve_public_ip()
         keys = await self.export_ssh_keys(open_tofu_dir=open_tofu_dir)
-        await (
+        return (
             self.ubuntu_base()
             .with_(install_packages(['openssh-client']))
             .with_mounted_directory('${HOME}/.ssh', keys, expand=True)
@@ -387,9 +391,51 @@ class FactorioServer:
                 """),
                 expand=True,
             )
-            .terminal(cmd=['ssh', 'factorio-server'])
+        )
+
+    @function
+    async def open_ssh(self, open_tofu_dir: dagger.Directory):
+        await (
+            (await self.ssh_container(open_tofu_dir=open_tofu_dir))
+            .terminal(cmd=['ssh', '-o', 'StrictHostKeyChecking=no', 'factorio-server'])
             .sync()
         )
+
+    @function
+    async def upload_save(self, open_tofu_dir: dagger.Directory, save: dagger.File):
+        """In case of devcontainer you need to copy save from host system to container fs
+        You can do it like this (from host system):
+        > CONTAINER_ID=$(docker ps --format 'table {{.ID}}\t{{.Image}}' | awk '{ if ($2~/^vsc-factorio-server.*/) print $1 }'); docker cp ${PATH_TO_SAVE} "${CONTAINER_ID}:/save.zip"
+        """  # noqa: E501
+        # TODO:
+        # 1. Remove magic literals: 845 (factorio docker user), paths
+        # 2. Think how to restart Docker (without restarting machine)
+        # 3. Think how to upload saves from host machine more easily
+        c = await self.ssh_container(open_tofu_dir=open_tofu_dir)
+        await (
+            c.with_file('/save.zip', save)
+            .with_(
+                exec_bash(
+                    """
+                        #!bash
+                        scp -o StrictHostKeyChecking=no /save.zip factorio-server:/home/factorio-sre/original.zip
+                        ssh -o StrictHostKeyChecking=no factorio-server <<-'ENDSSH'
+                            #!/usr/bin/env bash
+                            set -xeuo pipefail
+                            CONTAINER_ID="$(docker ps --format "table {{.ID}}" | tail -n +2)"
+                            if [ -n "$CONTAINER_ID" ]; then
+                                docker container stop "$CONTAINER_ID"
+                            fi
+                            sudo rm -f /factorio-data/saves/*
+                            sudo mv /home/factorio-sre/original.zip /factorio-data/saves
+                            sudo chown -R 845:845 /factorio-data
+                        ENDSSH
+                    """,  # noqa: E501
+                ),
+            )
+            .sync()
+        )
+        await self.command_server_machine(MachineCommand.RESTART)
 
     @function
     async def command_server_machine(self, command: MachineCommand):
