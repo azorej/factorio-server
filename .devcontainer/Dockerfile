@@ -4,6 +4,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-o", "errexit", "-o", "nounset", "-o", "x
 
 # Install dependencies
 RUN apt-get update -y && apt-get install -y \
+    telnet \
     curl \
     wget \
     git \
