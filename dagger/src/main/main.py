@@ -5,7 +5,7 @@ from textwrap import dedent
 
 import dagger
 import pydantic
-from dagger import DaggerError, dag, function, object_type
+from dagger import DaggerError, dag, enum_type, function, object_type
 
 from main.config import (
     FACTORIO_IMAGE_TAG,
@@ -17,6 +17,13 @@ from main.config import (
     YC_ZONE,
 )
 from main.utils import add_env_variables, exec_bash, exec_bash_and_save_exit_code, install_packages
+
+
+@enum_type
+class MachineCommand(dagger.Enum):
+    START = 'start', 'Start machine'
+    STOP = 'stop', 'Stop machine'
+    RESTART = 'restart', 'Restart machine'
 
 
 class YcFolderInfo(pydantic.BaseModel):
@@ -381,6 +388,18 @@ class FactorioServer:
                 expand=True,
             )
             .terminal(cmd=['ssh', 'factorio-server'])
+            .sync()
+        )
+
+    @function
+    async def command_server_machine(self, command: MachineCommand):
+        folder = YcFolderInfo.model_validate_json(await self.init_yc_folder())
+        (
+            await (await self.logged_yandex_cloud_cli())
+            .with_env_variable('CACHEBUSTER', str(datetime.now()))
+            .with_exec(
+                ['yc', 'compute', 'instance', str(command), f'--folder-id={folder.id}', f'--name={HOST_INSTANCE_NAME}']
+            )
             .sync()
         )
 
