@@ -72,4 +72,11 @@ resource "yandex_compute_instance" "server" {
   scheduling_policy {
     preemptible = false
   }
+
+  lifecycle {
+    ignore_changes = [
+      boot_disk,
+    ]
+  }
+
 }
