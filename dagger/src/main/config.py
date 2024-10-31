@@ -6,4 +6,4 @@ YC_SERVICE_ACCOUNT = 'factorio-sre'
 HOST_USERNAME = 'factorio-sre'
 HOST_INSTANCE_NAME = 'factorio-server'
 
-FACTORIO_IMAGE_TAG = 'stable-2.0.12'
+FACTORIO_IMAGE_TAG = 'stable-2.0.13'
